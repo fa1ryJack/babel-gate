@@ -1,12 +1,23 @@
-import { app, BrowserWindow, desktopCapturer, ipcMain, screen } from "electron";
+import {
+  app,
+  BrowserWindow,
+  desktopCapturer,
+  ipcMain,
+  screen,
+  Menu,
+} from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
+
+let mainWindow;
+let overlayWindow;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
 
+//shot (whole) screen
 async function handleTakeShot() {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { width, height } = primaryDisplay.workAreaSize;
@@ -19,9 +30,9 @@ async function handleTakeShot() {
   return sources[0].thumbnail.toDataURL();
 }
 
+//create main window
 const createWindow = () => {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1280,
     height: 720,
     center: true,
@@ -30,21 +41,68 @@ const createWindow = () => {
     },
   });
 
-  // and load the index.html of the app.
+  // Load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
+
+    // Open the DevTools.
+    // mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
     );
   }
 
-  // Open the DevTools.
-  // mainWindow.webContents.openDevTools();
+  Menu.setApplicationMenu(null);
+
+  mainWindow.on("closed", () => {
+    if (overlayWindow) {
+      overlayWindow.destroy();
+      overlayWindow = null;
+    }
+  });
 };
 
+//create overlay window
+function handleNewOverlay() {
+  if (!overlayWindow) {
+    overlayWindow = new BrowserWindow({
+      parent: mainWindow,
+      width: 1280,
+      height: 720,
+      center: true,
+      webPreferences: {
+        preload: path.join(__dirname, "overlay/preload.js"),
+      },
+    });
+
+    if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
+      overlayWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/#/overlay`);
+
+      // Open the DevTools.
+      // mainWindow.webContents.openDevTools();
+    } else {
+      overlayWindow.loadFile(
+        path.join(
+          __dirname,
+          `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html#/overlay`
+        )
+      );
+    }
+
+    overlayWindow.title = "Overlay window";
+
+    // Cleanup on window close
+    overlayWindow.on("closed", () => {
+      overlayWindow = null;
+    });
+  }
+}
+
 app.whenReady().then(() => {
+  //IPC
   ipcMain.handle("take-shot", handleTakeShot);
+  ipcMain.handle("new-overlay", handleNewOverlay);
 
   createWindow();
 
