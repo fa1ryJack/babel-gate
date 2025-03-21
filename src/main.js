@@ -63,24 +63,20 @@ const createWindow = () => {
   });
 };
 
-//create overlay window
+//Create overlay window
 function handleNewOverlay() {
   if (!overlayWindow) {
     overlayWindow = new BrowserWindow({
-      parent: mainWindow,
       width: 1280,
       height: 720,
-      center: true,
       webPreferences: {
-        preload: path.join(__dirname, "overlay/preload.js"),
+        preload: path.join(__dirname, "overlay_preload.js"),
       },
     });
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       overlayWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/#/overlay`);
-
-      // Open the DevTools.
-      // mainWindow.webContents.openDevTools();
+      // overlayWindow.webContents.openDevTools();
     } else {
       overlayWindow.loadFile(
         path.join(
@@ -92,7 +88,6 @@ function handleNewOverlay() {
 
     overlayWindow.title = "Overlay window";
 
-    // Cleanup on window close
     overlayWindow.on("closed", () => {
       overlayWindow = null;
     });
