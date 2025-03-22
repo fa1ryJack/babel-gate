@@ -81,49 +81,6 @@ const handleMouseMove = (event) => {
     const deltaY = event.clientY - startMouseY.value;
 
     // Handle width changes
-    if (["right", "both"].includes(resizeDirection.value)) {
-      const maxWidth = screenWidth.value - position.x;
-      dimensions.width = Math.max(
-        50,
-        Math.min(startWidth.value + deltaX, maxWidth)
-      );
-    } else if (resizeDirection.value === "left") {
-      let newWidth = startWidth.value - deltaX;
-      let newX = startPositionX.value + deltaX;
-
-      // Apply constraints
-      newX = Math.max(0, newX);
-      newWidth = Math.max(50, Math.min(newWidth, screenWidth.value - newX));
-
-      position.x = newX;
-      dimensions.width = newWidth;
-    }
-
-    // Handle height changes
-    if (["bottom", "both"].includes(resizeDirection.value)) {
-      const maxHeight = screenHeight.value - position.y;
-      dimensions.height = Math.max(
-        50,
-        Math.min(startHeight.value + deltaY, maxHeight)
-      );
-    } else if (resizeDirection.value === "top") {
-      let newHeight = startHeight.value - deltaY;
-      let newY = startPositionY.value + deltaY;
-
-      // Apply constraints
-      newY = Math.max(0, newY);
-      newHeight = Math.max(50, Math.min(newHeight, screenHeight.value - newY));
-
-      position.y = newY;
-      dimensions.height = newHeight;
-    }
-  }
-
-  if (isResizing.value) {
-    const deltaX = event.clientX - startMouseX.value;
-    const deltaY = event.clientY - startMouseY.value;
-
-    // Handle width changes for different directions
     if (resizeDirection.value.includes("right")) {
       const maxWidth = screenWidth.value - position.x;
       dimensions.width = Math.max(
@@ -134,14 +91,26 @@ const handleMouseMove = (event) => {
       let newWidth = startWidth.value - deltaX;
       let newX = startPositionX.value + deltaX;
 
+      // Clamp width to minimum and adjust position
+      newWidth = Math.max(50, newWidth);
+      const adjustedDeltaX = startWidth.value - newWidth;
+      newX = startPositionX.value + adjustedDeltaX;
       newX = Math.max(0, newX);
-      newWidth = Math.max(50, Math.min(newWidth, screenWidth.value - newX));
+
+      const maxAllowedWidth = screenWidth.value - newX;
+      newWidth = Math.min(newWidth, maxAllowedWidth);
+
+      if (newWidth < 50) {
+        newWidth = 50;
+        newX = Math.max(0, screenWidth.value - 50);
+        newWidth = Math.min(50, screenWidth.value - newX);
+      }
 
       position.x = newX;
       dimensions.width = newWidth;
     }
 
-    // Handle height changes for different directions
+    // Handle height changes
     if (resizeDirection.value.includes("bottom")) {
       const maxHeight = screenHeight.value - position.y;
       dimensions.height = Math.max(
@@ -152,8 +121,20 @@ const handleMouseMove = (event) => {
       let newHeight = startHeight.value - deltaY;
       let newY = startPositionY.value + deltaY;
 
+      // Clamp height to minimum and adjust position
+      newHeight = Math.max(50, newHeight);
+      const adjustedDeltaY = startHeight.value - newHeight;
+      newY = startPositionY.value + adjustedDeltaY;
       newY = Math.max(0, newY);
-      newHeight = Math.max(50, Math.min(newHeight, screenHeight.value - newY));
+
+      const maxAllowedHeight = screenHeight.value - newY;
+      newHeight = Math.min(newHeight, maxAllowedHeight);
+
+      if (newHeight < 50) {
+        newHeight = 50;
+        newY = Math.max(0, screenHeight.value - 50);
+        newHeight = Math.min(50, screenHeight.value - newY);
+      }
 
       position.y = newY;
       dimensions.height = newHeight;
@@ -231,19 +212,18 @@ const handleMouseUp = () => {
 
 .rectangle {
   position: absolute;
-  border: 2px solid #3498db;
-  background-color: rgba(52, 152, 219, 0.2);
+  border: 2px solid rgba(52, 152, 219, 0.7);
   cursor: move;
   user-select: none;
 }
 
 .resize-handle {
   position: absolute;
-  background-color: #3498db;
+  background-color: rgba(52, 152, 219, 0.7);
 }
 
 .resize-handle.right {
-  right: 0;
+  right: -15px;
   top: 50%;
   transform: translateY(-50%);
   width: 15px;
@@ -252,7 +232,7 @@ const handleMouseUp = () => {
 }
 
 .resize-handle.left {
-  left: 0;
+  left: -15px;
   bottom: 50%;
   transform: translateY(50%);
   width: 15px;
@@ -261,7 +241,7 @@ const handleMouseUp = () => {
 }
 
 .resize-handle.bottom {
-  bottom: 0;
+  bottom: -15px;
   left: 50%;
   transform: translateX(-50%);
   width: 35px;
@@ -270,7 +250,7 @@ const handleMouseUp = () => {
 }
 
 .resize-handle.top {
-  top: 0;
+  top: -15px;
   right: 50%;
   transform: translateX(50%);
   width: 35px;
@@ -279,32 +259,32 @@ const handleMouseUp = () => {
 }
 
 .resize-handle.rb-corner {
-  right: 0;
-  bottom: 0;
+  right: -15px;
+  bottom: -15px;
   width: 15px;
   height: 15px;
   cursor: nwse-resize;
 }
 
 .resize-handle.rt-corner {
-  right: 0;
-  top: 0;
+  right: -15px;
+  top: -15px;
   width: 15px;
   height: 15px;
   cursor: nesw-resize;
 }
 
 .resize-handle.lb-corner {
-  left: 0;
-  bottom: 0;
+  left: -15px;
+  bottom: -15px;
   width: 15px;
   height: 15px;
   cursor: nesw-resize;
 }
 
 .resize-handle.lt-corner {
-  left: 0;
-  top: 0;
+  left: -15px;
+  top: -15px;
   width: 15px;
   height: 15px;
   cursor: nwse-resize;

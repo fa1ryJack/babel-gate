@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("mainAPI", {
-  takeShot: () => ipcRenderer.invoke("take-shot"),
+  takeShot: (captureArea) => ipcRenderer.invoke("take-shot", captureArea),
   newOverlay: () => ipcRenderer.invoke("new-overlay"),
 });

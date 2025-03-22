@@ -1,7 +1,7 @@
 <script setup>
-import Test from "../components/Test.vue";
+import Selection from "../components/Selection.vue";
 </script>
 <template>
   <h1>overlay</h1>
-  <Test />
+  <Selection />
 </template>

@@ -17,20 +17,27 @@ if (started) {
   app.quit();
 }
 
-//shot (whole) screen
-async function handleTakeShot() {
+//Shot (whole) screen
+async function handleTakeShot(_event, captureArea) {
   const primaryDisplay = screen.getPrimaryDisplay();
+
+  // Get screen dimensions
   const { width, height } = primaryDisplay.workAreaSize;
 
+  // Capture full screen
   const sources = await desktopCapturer.getSources({
     types: ["screen"],
-    thumbnailSize: { width: width, height: height },
+    thumbnailSize: { width, height },
   });
 
-  return sources[0].thumbnail.toDataURL();
+  // Crop to desired area
+  const fullScreenshot = sources[0].thumbnail;
+  const croppedImage = fullScreenshot.crop(captureArea);
+
+  return croppedImage.toDataURL();
 }
 
-//create main window
+//Create main window
 const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1280,
