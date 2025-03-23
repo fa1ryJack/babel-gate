@@ -1,1 +1,6 @@
-console.log("--loaded preload.js for overlay--");
+import { contextBridge, ipcRenderer } from "electron";
+
+contextBridge.exposeInMainWorld("overlayAPI", {
+  takeShot: (captureArea) => ipcRenderer.invoke("take-shot", captureArea),
+  closeOverlay: () => ipcRenderer.invoke("close-overlay"),
+});

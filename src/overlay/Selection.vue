@@ -1,8 +1,26 @@
 <script setup>
-import { reactive, ref, onMounted, onBeforeUnmount } from "vue";
+import { reactive, ref, onMounted, onBeforeUnmount, watch } from "vue";
+
+const emit = defineEmits(["selectionUpdate"]);
 
 const position = reactive({ x: 100, y: 100 });
 const dimensions = reactive({ width: 200, height: 150 });
+const minSize = reactive({
+  width: 5,
+  height: 5,
+});
+
+watch(
+  [position, dimensions],
+  () => {
+    emit("selectionUpdate", {
+      position: { ...position },
+      dimensions: { ...dimensions },
+    });
+  },
+  { deep: true, immediate: true }
+);
+
 const isDragging = ref(false);
 const isResizing = ref(false);
 const resizeDirection = ref(null);
@@ -32,6 +50,7 @@ onBeforeUnmount(() => {
 });
 
 const startDrag = (event) => {
+  event.stopPropagation();
   if (event.target.classList.contains("resize-handle")) return;
   isDragging.value = true;
   startMouseX.value = event.clientX;
@@ -84,7 +103,7 @@ const handleMouseMove = (event) => {
     if (resizeDirection.value.includes("right")) {
       const maxWidth = screenWidth.value - position.x;
       dimensions.width = Math.max(
-        50,
+        minSize.width,
         Math.min(startWidth.value + deltaX, maxWidth)
       );
     } else if (resizeDirection.value.includes("left")) {
@@ -92,7 +111,7 @@ const handleMouseMove = (event) => {
       let newX = startPositionX.value + deltaX;
 
       // Clamp width to minimum and adjust position
-      newWidth = Math.max(50, newWidth);
+      newWidth = Math.max(minSize.width, newWidth);
       const adjustedDeltaX = startWidth.value - newWidth;
       newX = startPositionX.value + adjustedDeltaX;
       newX = Math.max(0, newX);
@@ -100,10 +119,10 @@ const handleMouseMove = (event) => {
       const maxAllowedWidth = screenWidth.value - newX;
       newWidth = Math.min(newWidth, maxAllowedWidth);
 
-      if (newWidth < 50) {
-        newWidth = 50;
-        newX = Math.max(0, screenWidth.value - 50);
-        newWidth = Math.min(50, screenWidth.value - newX);
+      if (newWidth < minSize.width) {
+        newWidth = minSize.width;
+        newX = Math.max(0, screenWidth.value - minSize.width);
+        newWidth = Math.min(minSize.width, screenWidth.value - newX);
       }
 
       position.x = newX;
@@ -114,7 +133,7 @@ const handleMouseMove = (event) => {
     if (resizeDirection.value.includes("bottom")) {
       const maxHeight = screenHeight.value - position.y;
       dimensions.height = Math.max(
-        50,
+        minSize.height,
         Math.min(startHeight.value + deltaY, maxHeight)
       );
     } else if (resizeDirection.value.includes("top")) {
@@ -122,7 +141,7 @@ const handleMouseMove = (event) => {
       let newY = startPositionY.value + deltaY;
 
       // Clamp height to minimum and adjust position
-      newHeight = Math.max(50, newHeight);
+      newHeight = Math.max(minSize.height, newHeight);
       const adjustedDeltaY = startHeight.value - newHeight;
       newY = startPositionY.value + adjustedDeltaY;
       newY = Math.max(0, newY);
@@ -130,10 +149,10 @@ const handleMouseMove = (event) => {
       const maxAllowedHeight = screenHeight.value - newY;
       newHeight = Math.min(newHeight, maxAllowedHeight);
 
-      if (newHeight < 50) {
-        newHeight = 50;
-        newY = Math.max(0, screenHeight.value - 50);
-        newHeight = Math.min(50, screenHeight.value - newY);
+      if (newHeight < minSize.height) {
+        newHeight = minSize.height;
+        newY = Math.max(0, screenHeight.value - minSize.height);
+        newHeight = Math.min(minSize.height, screenHeight.value - newY);
       }
 
       position.y = newY;
@@ -200,7 +219,7 @@ const handleMouseUp = () => {
   </div>
 </template>
 
-<style>
+<style scoped>
 .container {
   position: fixed;
   top: 0;
@@ -208,18 +227,19 @@ const handleMouseUp = () => {
   right: 0;
   bottom: 0;
   overflow: hidden;
+  z-index: 999;
 }
 
 .rectangle {
   position: absolute;
-  border: 2px solid rgba(52, 152, 219, 0.7);
+  border: 2px solid rgba(52, 152, 219, 0.2);
   cursor: move;
   user-select: none;
 }
 
 .resize-handle {
   position: absolute;
-  background-color: rgba(52, 152, 219, 0.7);
+  background-color: rgba(52, 152, 219, 0.2);
 }
 
 .resize-handle.right {

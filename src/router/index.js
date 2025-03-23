@@ -15,7 +15,7 @@ const routes = [
     path: "/overlay",
     component: Overlay,
     meta: {
-      title: "Overlay Window",
+      title: "Babel;Gate Overlay",
     },
   },
 ];

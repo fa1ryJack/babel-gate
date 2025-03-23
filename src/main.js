@@ -20,19 +20,27 @@ if (started) {
 //Shot (whole) screen
 async function handleTakeShot(_event, captureArea) {
   const primaryDisplay = screen.getPrimaryDisplay();
+  const { workArea, bounds } = primaryDisplay;
 
-  // Get screen dimensions
-  const { width, height } = primaryDisplay.workAreaSize;
+  // Convert overlay-relative coordinates to screen coordinates
+  const adjustedArea = {
+    x: captureArea.x + workArea.x,
+    y: captureArea.y + workArea.y,
+    width: captureArea.width,
+    height: captureArea.height,
+  };
 
-  // Capture full screen
   const sources = await desktopCapturer.getSources({
     types: ["screen"],
-    thumbnailSize: { width, height },
+    thumbnailSize: {
+      width: bounds.width, // Use full screen dimensions
+      height: bounds.height,
+    },
   });
 
   // Crop to desired area
   const fullScreenshot = sources[0].thumbnail;
-  const croppedImage = fullScreenshot.crop(captureArea);
+  const croppedImage = fullScreenshot.crop(adjustedArea); // Use adjusted coordinates
 
   return croppedImage.toDataURL();
 }
@@ -73,9 +81,15 @@ const createWindow = () => {
 //Create overlay window
 function handleNewOverlay() {
   if (!overlayWindow) {
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const workArea = primaryDisplay.workArea;
     overlayWindow = new BrowserWindow({
-      width: 1280,
-      height: 720,
+      width: workArea.width,
+      height: workArea.height,
+      transparent: true,
+      x: workArea.x,
+      y: workArea.y,
+      frame: false,
       webPreferences: {
         preload: path.join(__dirname, "overlay_preload.js"),
       },
@@ -83,7 +97,7 @@ function handleNewOverlay() {
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       overlayWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/#/overlay`);
-      // overlayWindow.webContents.openDevTools();
+      overlayWindow.webContents.openDevTools();
     } else {
       overlayWindow.loadFile(
         path.join(
@@ -101,10 +115,16 @@ function handleNewOverlay() {
   }
 }
 
+function handleCloseOverlay() {
+  overlayWindow.destroy();
+  overlayWindow = null;
+}
+
 app.whenReady().then(() => {
   //IPC
   ipcMain.handle("take-shot", handleTakeShot);
   ipcMain.handle("new-overlay", handleNewOverlay);
+  ipcMain.handle("close-overlay", handleCloseOverlay);
 
   createWindow();
 
