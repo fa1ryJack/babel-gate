@@ -8,7 +8,9 @@ import {
 } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
+const { createWorker } = require("tesseract.js");
 
+let worker;
 let mainWindow;
 let overlayWindow;
 
@@ -42,7 +44,11 @@ async function handleTakeShot(_event, captureArea) {
   const fullScreenshot = sources[0].thumbnail;
   const croppedImage = fullScreenshot.crop(adjustedArea); // Use adjusted coordinates
 
-  return croppedImage.toDataURL();
+  const {
+    data: { text },
+  } = await worker.recognize(croppedImage.toDataURL());
+
+  return text;
 }
 
 //Create main window
@@ -72,14 +78,13 @@ const createWindow = () => {
 
   mainWindow.on("closed", () => {
     if (overlayWindow) {
-      overlayWindow.destroy();
-      overlayWindow = null;
+      handleCloseOverlay();
     }
   });
 };
 
 //Create overlay window
-function handleNewOverlay() {
+async function handleNewOverlay() {
   if (!overlayWindow) {
     const primaryDisplay = screen.getPrimaryDisplay();
     const workArea = primaryDisplay.workArea;
@@ -97,7 +102,7 @@ function handleNewOverlay() {
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       overlayWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/#/overlay`);
-      overlayWindow.webContents.openDevTools();
+      // overlayWindow.webContents.openDevTools();
     } else {
       overlayWindow.loadFile(
         path.join(
@@ -109,15 +114,18 @@ function handleNewOverlay() {
 
     overlayWindow.title = "Overlay window";
 
+    worker = await createWorker("jpn");
+
     overlayWindow.on("closed", () => {
       overlayWindow = null;
     });
   }
 }
 
-function handleCloseOverlay() {
+async function handleCloseOverlay() {
   overlayWindow.destroy();
   overlayWindow = null;
+  await worker.terminate();
 }
 
 app.whenReady().then(() => {

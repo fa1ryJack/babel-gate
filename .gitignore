@@ -154,3 +154,6 @@ typings/
 
 # Electron-Forge
 out/
+
+# Tesseract.js
+*.traineddata

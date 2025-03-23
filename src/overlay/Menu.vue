@@ -128,7 +128,6 @@ const handleButtonClick = (action) => {
   cursor: pointer;
   transition: background 0.2s;
   font-size: 14px;
-  white-space: nowrap; /* Prevent text wrapping */
 }
 
 .menu-btn:hover {

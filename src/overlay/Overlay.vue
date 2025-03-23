@@ -3,14 +3,14 @@ import Selection from "./Selection.vue";
 import Menu from "./Menu.vue";
 import { ref } from "vue";
 
-const imageSource = ref("");
+const text = ref("");
 const selectionState = ref({
   position: { x: 0, y: 0 },
   dimensions: { width: 0, height: 0 },
 });
 
 async function getShot() {
-  imageSource.value = await window.overlayAPI.takeShot({
+  text.value = await window.overlayAPI.takeShot({
     x: selectionState.value.position.x + 2,
     y: selectionState.value.position.y + 2,
     width: selectionState.value.dimensions.width,
@@ -40,8 +40,7 @@ function handleMenuAction(action) {
 <template>
   <div class="overlay-container">
     <h2>overlay</h2>
-    <img :src="imageSource" />
-
+    <p>{{ text }}</p>
     <Selection
       @selectionUpdate="handleSelectionUpdate"
       class="selection-component"
