@@ -98,7 +98,7 @@ const handleButtonClick = (action) => {
 .menu-box {
   position: fixed;
   z-index: 1001;
-  background: rgba(255, 255, 255, 0.9);
+  background: white;
   border: 2px solid #3498db;
   border-radius: 8px;
   cursor: move;

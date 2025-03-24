@@ -44,11 +44,21 @@ async function handleTakeShot(_event, captureArea) {
   const fullScreenshot = sources[0].thumbnail;
   const croppedImage = fullScreenshot.crop(adjustedArea); // Use adjusted coordinates
 
-  const {
+  let {
     data: { text },
   } = await worker.recognize(croppedImage.toDataURL());
 
-  return text;
+  //Tesseract returns a lot of white spaces when dealing with Japanese. \
+  // This approach is not good, because there might be intentional spaces
+  // but I will keep at that for now.
+  text = text.replace(
+    /([一-龯々ぁ-ゔァ-ヴー])\s+([一-龯々ぁ-ゔァ-ヴー])/g,
+    "$1$2"
+  );
+
+  mainWindow.webContents.send("captured-text", text);
+
+  return text; //TODO: return translated text
 }
 
 //Create main window
@@ -95,6 +105,8 @@ async function handleNewOverlay() {
       x: workArea.x,
       y: workArea.y,
       frame: false,
+      alwaysOnTop: true,
+      focusable: false,
       webPreferences: {
         preload: path.join(__dirname, "overlay_preload.js"),
       },
@@ -114,7 +126,7 @@ async function handleNewOverlay() {
 
     overlayWindow.title = "Overlay window";
 
-    worker = await createWorker("jpn");
+    worker = await createWorker("jpn"); //TODO: add more languages
 
     overlayWindow.on("closed", () => {
       overlayWindow = null;

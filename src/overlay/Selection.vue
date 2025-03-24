@@ -232,14 +232,15 @@ const handleMouseUp = () => {
 
 .rectangle {
   position: absolute;
-  border: 2px solid rgba(52, 152, 219, 0.2);
+  border: 2px solid rgba(255, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.01);
   cursor: move;
   user-select: none;
 }
 
 .resize-handle {
   position: absolute;
-  background-color: rgba(52, 152, 219, 0.2);
+  background-color: rgba(255, 0, 0, 0.2);
 }
 
 .resize-handle.right {
