@@ -1,12 +1,13 @@
 <script setup>
 import { reactive, ref, onMounted, onBeforeUnmount } from "vue";
 
-const emit = defineEmits(["menuAction"]);
+const emit = defineEmits(["menuAction", "updateBounds"]);
 
-const position = reactive({ x: 100, y: 100 });
+const position = reactive({ x: 100, y: 400 });
 const dimensions = reactive({ width: 150, height: 150 });
 const isDragging = ref(false);
 const dragOffset = reactive({ x: 0, y: 0 }); // Stores offset from cursor to element corner
+const someMargin = 25; // important!
 
 // Get screen dimensions
 const screenWidth = ref(window.innerWidth);
@@ -42,21 +43,29 @@ const startDrag = (event) => {
 const handleMouseMove = (event) => {
   if (!isDragging.value) return;
 
-  // Calculate new position with proper offset
-  let newX = event.clientX - dragOffset.x;
-  let newY = event.clientY - dragOffset.y;
+  const updatePosition = () => {
+    // Calculate new position with proper offset
+    let newX = event.clientX - dragOffset.x;
+    let newY = event.clientY - dragOffset.y;
 
-  // Corrected screen constraints calculation
+    // Corrected screen constraints calculation
+    const maxX = screenWidth.value - dimensions.width - someMargin;
+    const maxY = screenHeight.value - dimensions.height - someMargin;
 
-  const edgeMargin = 25; // Pixels from screen edges (important!)
-  const maxX = screenWidth.value - dimensions.width - edgeMargin;
-  const maxY = screenHeight.value - dimensions.height - edgeMargin;
+    newX = Math.max(0, Math.min(newX, maxX));
+    newY = Math.max(0, Math.min(newY, maxY));
 
-  newX = Math.max(0, Math.min(newX, maxX));
-  newY = Math.max(0, Math.min(newY, maxY));
+    position.x = newX;
+    position.y = newY;
 
-  position.x = newX;
-  position.y = newY;
+    emit("updateBounds", {
+      x: newX, // Use window-relative X
+      y: newY, // Use window-relative Y
+      width: dimensions.width + someMargin,
+      height: dimensions.height + someMargin,
+    });
+  };
+  requestAnimationFrame(updatePosition);
 };
 
 const handleMouseUp = () => {
@@ -70,6 +79,15 @@ const handleMouseUp = () => {
 const handleButtonClick = (action) => {
   emit("menuAction", action);
 };
+
+onMounted(() => {
+  emit("updateBounds", {
+    x: position.x,
+    y: position.y,
+    width: dimensions.width + someMargin,
+    height: dimensions.height + someMargin,
+  });
+});
 </script>
 
 <template>

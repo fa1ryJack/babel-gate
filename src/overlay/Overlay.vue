@@ -35,15 +35,28 @@ function handleMenuAction(action) {
     closeOverlay();
   }
 }
+
+function handleUpdateMenuBounds(bounds) {
+  window.overlayAPI.updateMenuBounds(bounds);
+}
+
+function handleUpdateSelectionBounds(bounds) {
+  window.overlayAPI.updateSelectionBounds(bounds);
+}
 </script>
 
 <template>
   <div class="overlay-container">
     <Selection
       @selectionUpdate="handleSelectionUpdate"
+      @updateBounds="handleUpdateSelectionBounds"
       class="selection-component"
     />
-    <Menu @menuAction="handleMenuAction" class="menu" />
+    <Menu
+      @menuAction="handleMenuAction"
+      @updateBounds="handleUpdateMenuBounds"
+      class="menu"
+    />
   </div>
 </template>
 

@@ -1,7 +1,7 @@
 <script setup>
 import { reactive, ref, onMounted, onBeforeUnmount, watch } from "vue";
 
-const emit = defineEmits(["selectionUpdate"]);
+const emit = defineEmits(["selectionUpdate", "updateBounds"]);
 
 const position = reactive({ x: 100, y: 100 });
 const dimensions = reactive({ width: 200, height: 150 });
@@ -10,12 +10,21 @@ const minSize = reactive({
   height: 5,
 });
 
+const positionOffset = 15;
+const dimensionsOffset = 35;
+
 watch(
   [position, dimensions],
   () => {
     emit("selectionUpdate", {
       position: { ...position },
       dimensions: { ...dimensions },
+    });
+    emit("updateBounds", {
+      x: position.x - positionOffset,
+      y: position.y - positionOffset,
+      width: dimensions.width + dimensionsOffset,
+      height: dimensions.height + dimensionsOffset,
     });
   },
   { deep: true, immediate: true }
@@ -232,7 +241,7 @@ const handleMouseUp = () => {
 
 .rectangle {
   position: absolute;
-  border: 2px solid rgba(255, 0, 0, 0.2);
+  border: 2px solid rgba(255, 0, 0, 0.5);
   background: rgba(0, 0, 0, 0.01);
   cursor: move;
   user-select: none;
@@ -240,7 +249,7 @@ const handleMouseUp = () => {
 
 .resize-handle {
   position: absolute;
-  background-color: rgba(255, 0, 0, 0.2);
+  background-color: rgba(255, 0, 0, 0.5);
 }
 
 .resize-handle.right {

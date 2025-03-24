@@ -11,8 +11,18 @@ import started from "electron-squirrel-startup";
 const { createWorker } = require("tesseract.js");
 
 let worker;
+
 let mainWindow;
 let overlayWindow;
+
+let menuBounds;
+let selectionBounds;
+// let textBoudns //translated in overlay (laters!)
+
+//Overlay stuff movement optimization
+app.commandLine.appendSwitch("enable-transparent-visuals");
+app.commandLine.appendSwitch("disable-gpu-vsync");
+app.commandLine.appendSwitch("disable-threaded-animation");
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -125,6 +135,7 @@ async function handleNewOverlay() {
     }
 
     overlayWindow.title = "Overlay window";
+    overlayWindow.setShape([]); // Start with empty clickable region
 
     worker = await createWorker("jpn"); //TODO: add more languages
 
@@ -140,11 +151,26 @@ async function handleCloseOverlay() {
   await worker.terminate();
 }
 
+function handleUpdateOverlayShapes() {
+  if (overlayWindow && menuBounds) {
+    overlayWindow.setShape([menuBounds, selectionBounds]);
+  }
+}
+
 app.whenReady().then(() => {
   //IPC
   ipcMain.handle("take-shot", handleTakeShot);
   ipcMain.handle("new-overlay", handleNewOverlay);
   ipcMain.handle("close-overlay", handleCloseOverlay);
+
+  ipcMain.on("update-menu-bounds", (_event, bounds) => {
+    menuBounds = bounds;
+    handleUpdateOverlayShapes();
+  });
+  ipcMain.on("update-selection-bounds", (_event, bounds) => {
+    selectionBounds = bounds;
+    handleUpdateOverlayShapes();
+  });
 
   createWindow();
 
