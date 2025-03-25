@@ -1,9 +1,10 @@
 <script setup>
 import Selection from "./Selection.vue";
 import Menu from "./Menu.vue";
+import TextBox from "./TextBox.vue";
 import { ref } from "vue";
 
-const translatedText = ref("");
+const translatedText = ref("Shoot a text");
 const selectionState = ref({
   position: { x: 0, y: 0 },
   dimensions: { width: 0, height: 0 },
@@ -43,6 +44,10 @@ function handleUpdateMenuBounds(bounds) {
 function handleUpdateSelectionBounds(bounds) {
   window.overlayAPI.updateSelectionBounds(bounds);
 }
+
+function handleUpdateTextBoxBounds(bounds) {
+  window.overlayAPI.updateTextBoxBounds(bounds);
+}
 </script>
 
 <template>
@@ -56,6 +61,11 @@ function handleUpdateSelectionBounds(bounds) {
       @menuAction="handleMenuAction"
       @updateBounds="handleUpdateMenuBounds"
       class="menu"
+    />
+    <TextBox
+      :translated-text="translatedText"
+      class="text-box"
+      @updateBounds="handleUpdateTextBoxBounds"
     />
   </div>
 </template>
@@ -80,6 +90,10 @@ button {
 .menu {
   position: fixed;
   z-index: 1001;
+}
+.text-box {
+  position: fixed;
+  z-index: 1002;
 }
 .selection-component {
   position: fixed;

@@ -8,8 +8,13 @@ import {
 } from "electron";
 import path from "node:path";
 import started from "electron-squirrel-startup";
-const { createWorker } = require("tesseract.js");
+import * as deepl from "deepl-node";
+require("dotenv").config();
 
+const deeplKey = process.env.DEEPL_API_KEY;
+const translator = new deepl.Translator(deeplKey);
+
+const { createWorker } = require("tesseract.js");
 let worker;
 
 let mainWindow;
@@ -17,7 +22,7 @@ let overlayWindow;
 
 let menuBounds;
 let selectionBounds;
-// let textBoudns //translated in overlay (laters!)
+let textBoxBoudns;
 
 //Overlay stuff movement optimization
 app.commandLine.appendSwitch("enable-transparent-visuals");
@@ -68,7 +73,9 @@ async function handleTakeShot(_event, captureArea) {
 
   mainWindow.webContents.send("captured-text", text);
 
-  return text; //TODO: return translated text
+  text = await translator.translateText(text, "ja", "en-US");
+
+  return text.text;
 }
 
 //Create main window
@@ -152,8 +159,8 @@ async function handleCloseOverlay() {
 }
 
 function handleUpdateOverlayShapes() {
-  if (overlayWindow && menuBounds) {
-    overlayWindow.setShape([menuBounds, selectionBounds]);
+  if (overlayWindow && menuBounds && selectionBounds && textBoxBoudns) {
+    overlayWindow.setShape([menuBounds, selectionBounds, textBoxBoudns]);
   }
 }
 
@@ -169,6 +176,10 @@ app.whenReady().then(() => {
   });
   ipcMain.on("update-selection-bounds", (_event, bounds) => {
     selectionBounds = bounds;
+    handleUpdateOverlayShapes();
+  });
+  ipcMain.on("update-text-box-bounds", (_event, bounds) => {
+    textBoxBoudns = bounds;
     handleUpdateOverlayShapes();
   });
 

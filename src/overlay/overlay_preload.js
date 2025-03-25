@@ -6,4 +6,6 @@ contextBridge.exposeInMainWorld("overlayAPI", {
   updateMenuBounds: (bounds) => ipcRenderer.send("update-menu-bounds", bounds),
   updateSelectionBounds: (bounds) =>
     ipcRenderer.send("update-selection-bounds", bounds),
+  updateTextBoxBounds: (bounds) =>
+    ipcRenderer.send("update-text-box-bounds", bounds),
 });
