@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from "vue-router";
 
 import Overlay from "../overlay/Overlay.vue";
 import Main from "../components/Main.vue";
+import Translations from "../components/Translations.vue";
 
 const routes = [
   {
@@ -10,6 +11,15 @@ const routes = [
     meta: {
       title: "Babel;Gate",
     },
+  },
+  {
+    path: "/translations/:folder_id",
+    component: Translations,
+    meta: {
+      title: "Babel;Gate folder",
+    },
+    name: "translations",
+    props: true,
   },
   {
     path: "/overlay",

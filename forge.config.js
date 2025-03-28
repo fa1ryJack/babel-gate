@@ -4,8 +4,12 @@ const { FuseV1Options, FuseVersion } = require("@electron/fuses");
 module.exports = {
   packagerConfig: {
     asar: true,
+    extraResource: ["./src/database"],
   },
-  rebuildConfig: {},
+  rebuildConfig: {
+    buildOnly: true,
+    force: true,
+  },
   makers: [
     {
       name: "@electron-forge/maker-squirrel",
@@ -25,6 +29,10 @@ module.exports = {
     },
   ],
   plugins: [
+    {
+      name: "@electron-forge/plugin-auto-unpack-natives",
+      config: {},
+    },
     {
       name: "@electron-forge/plugin-vite",
       config: {

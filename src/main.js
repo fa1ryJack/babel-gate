@@ -10,6 +10,14 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 import * as deepl from "deepl-node";
 require("dotenv").config();
+import { getDatabase } from "./database";
+import PQueue from "p-queue";
+
+const writeQueue = new PQueue({
+  concurrency: 1, // Process one write at a time
+  autoStart: true,
+  timeout: 5000, // Cancel stuck operations after 5s
+});
 
 const deeplKey = process.env.DEEPL_API_KEY;
 const translator = new deepl.Translator(deeplKey);
@@ -34,7 +42,7 @@ if (started) {
   app.quit();
 }
 
-//Shot (whole) screen
+//Shot screen
 async function handleTakeShot(_event, captureArea) {
   const primaryDisplay = screen.getPrimaryDisplay();
   const { workArea, bounds } = primaryDisplay;
@@ -71,11 +79,11 @@ async function handleTakeShot(_event, captureArea) {
     "$1$2"
   );
 
-  mainWindow.webContents.send("captured-text", text);
+  const translatedText = await translator.translateText(text, "ja", "en-US");
 
-  text = await translator.translateText(text, "ja", "en-US");
+  mainWindow.webContents.send("captured-text", text, translatedText.text);
 
-  return text.text;
+  return translatedText.text;
 }
 
 //Create main window
@@ -94,7 +102,7 @@ const createWindow = () => {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
 
     // Open the DevTools.
-    // mainWindow.webContents.openDevTools();
+    mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(
       path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`)
@@ -131,7 +139,6 @@ async function handleNewOverlay() {
 
     if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
       overlayWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/#/overlay`);
-      // overlayWindow.webContents.openDevTools();
     } else {
       overlayWindow.loadFile(
         path.join(
@@ -142,7 +149,7 @@ async function handleNewOverlay() {
     }
 
     overlayWindow.title = "Overlay window";
-    overlayWindow.setShape([]); // Start with empty clickable region
+    overlayWindow.setShape([]);
 
     worker = await createWorker("jpn"); //TODO: add more languages
 
@@ -164,11 +171,30 @@ function handleUpdateOverlayShapes() {
   }
 }
 
+async function handleDBWrite(_event, sql, params) {
+  return writeQueue.add(() => {
+    const db = getDatabase();
+    return db.prepare(sql).run(params);
+  });
+}
+
+async function handleDBRead(_event, method, sql, params) {
+  const db = getDatabase();
+  const stmt = db.prepare(sql);
+  if (method === "get") {
+    return params !== undefined ? stmt.get(params) : stmt.get();
+  } else if (method === "all") {
+    return params !== undefined ? stmt.all(params) : stmt.all();
+  }
+}
+
 app.whenReady().then(() => {
   //IPC
   ipcMain.handle("take-shot", handleTakeShot);
   ipcMain.handle("new-overlay", handleNewOverlay);
   ipcMain.handle("close-overlay", handleCloseOverlay);
+  ipcMain.handle("db-write", handleDBWrite);
+  ipcMain.handle("db-read", handleDBRead);
 
   ipcMain.on("update-menu-bounds", (_event, bounds) => {
     menuBounds = bounds;
