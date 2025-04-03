@@ -9,20 +9,20 @@ import {
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import * as deepl from "deepl-node";
-require("dotenv").config();
+require("dotenv").config(); //Comment out while packaging
 import { getDatabase } from "./database";
 import PQueue from "p-queue";
 
 const writeQueue = new PQueue({
-  concurrency: 1, // Process one write at a time
+  concurrency: 1, //Process one write at a time
   autoStart: true,
-  timeout: 5000, // Cancel stuck operations after 5s
+  timeout: 5000, //Cancel stuck operations after 5s
 });
 
-const deeplKey = process.env.DEEPL_API_KEY;
+const deeplKey = process.env.DEEPL_API_KEY; //Comment out while packaging
 const translator = new deepl.Translator(deeplKey);
 
-const { createWorker } = require("tesseract.js");
+import { createWorker } from "tesseract.js";
 let worker;
 
 let mainWindow;
@@ -120,6 +120,7 @@ const createWindow = () => {
 
 //Create overlay window
 async function handleNewOverlay() {
+  //TODO: receive folder name and id
   if (!overlayWindow) {
     const primaryDisplay = screen.getPrimaryDisplay();
     const workArea = primaryDisplay.workArea;
@@ -151,7 +152,10 @@ async function handleNewOverlay() {
     overlayWindow.title = "Overlay window";
     overlayWindow.setShape([]);
 
-    worker = await createWorker("jpn"); //TODO: add more languages
+    // https://github.com/naptha/tesseract.js/issues/868#issuecomment-1879235802
+    worker = await createWorker("jpn", 1, {
+      workerPath: "./node_modules/tesseract.js/src/worker-script/node/index.js",
+    }); //TODO: add more languages
 
     overlayWindow.on("closed", () => {
       overlayWindow = null;

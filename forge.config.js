@@ -1,10 +1,17 @@
 const { FusesPlugin } = require("@electron-forge/plugin-fuses");
 const { FuseV1Options, FuseVersion } = require("@electron/fuses");
-
+//https://github.com/electron/forge/issues/3738#issuecomment-2692534953 - worked
+//https://github.com/electron/forge/issues/3738#issuecomment-2622541945 - looks super complicated
+//un-comment while packaging
+// const {
+//   AutoUnpackNativesPlugin,
+// } = require("@electron-forge/plugin-auto-unpack-natives");
 module.exports = {
   packagerConfig: {
     asar: true,
     executableName: "babel-gate",
+    //un-comment while packaging
+    // ignore: [/node_modules\/(?!(better-sqlite3|bindings|file-uri-to-path)\/)/],
   },
   rebuildConfig: {
     buildOnly: true,
@@ -29,6 +36,7 @@ module.exports = {
     },
   ],
   plugins: [
+    // new AutoUnpackNativesPlugin({}), //un-comment while packaging
     {
       name: "@electron-forge/plugin-auto-unpack-natives",
       config: {},
