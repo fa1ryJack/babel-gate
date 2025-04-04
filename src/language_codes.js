@@ -60,7 +60,6 @@ export const deeplTesseractMappings = {
     { deepl_target: "NL", language: "Dutch" },
     { deepl_target: "EN-US", language: "English (American)" },
     { deepl_target: "EN-GB", language: "English (British)" },
-    { deepl_target: "EN", language: "English (unspecified variant)" },
     { deepl_target: "ET", language: "Estonian" },
     { deepl_target: "FI", language: "Finnish" },
     { deepl_target: "FR", language: "French" },

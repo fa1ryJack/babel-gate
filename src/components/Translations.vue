@@ -16,12 +16,14 @@ let timeout;
 const sourceCodes = ref([]);
 const targetCodes = ref([]);
 
+const sourceTextareas = ref([]);
+const deeplTextareas = ref([]);
+const manualTextareas = ref([]);
+
 function autoResize(textarea) {
   if (!textarea) return;
-  nextTick(() => {
-    textarea.style.height = "auto";
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  });
+  textarea.style.height = "auto";
+  textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
 onMounted(async () => {
@@ -53,10 +55,6 @@ function handleOpenOverlay() {
         .language,
   });
 }
-
-window.mainAPI.onCapturedText((capturedText) => {
-  capturedText.value = capturedText;
-});
 
 function handleGoBack() {
   router.go(-1);
@@ -97,6 +95,12 @@ async function loadTranslations() {
   targetCodes.value = translations.value.map(() => {
     return 8;
   });
+
+  await nextTick();
+
+  sourceTextareas.value.forEach(autoResize);
+  deeplTextareas.value.forEach(autoResize);
+  manualTextareas.value.forEach(autoResize);
 }
 
 function handleOnKeyDown() {
@@ -206,6 +210,7 @@ async function handleDeleteTranslation(translation_id, index) {
             </option>
           </select>
           <textarea
+            ref="sourceTextareas"
             class="auto-resize-textarea"
             :value="translation.source_text"
             @input="
@@ -240,6 +245,7 @@ async function handleDeleteTranslation(translation_id, index) {
             </option>
           </select>
           <textarea
+            ref="deeplTextareas"
             class="auto-resize-textarea"
             :value="translation.deepl_translated"
             readonly
@@ -248,6 +254,7 @@ async function handleDeleteTranslation(translation_id, index) {
         <!-- Manual Translation -->
         <div class="select-text-wrap">
           <textarea
+            ref="manualTextareas"
             class="auto-resize-textarea"
             :value="translation.manual_translated"
             @input="

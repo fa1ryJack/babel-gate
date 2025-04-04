@@ -9,7 +9,10 @@ import {
 import path from "node:path";
 import started from "electron-squirrel-startup";
 import * as deepl from "deepl-node";
-require("dotenv").config(); //Comment out while packaging
+
+//Comment out while packaging
+require("dotenv").config();
+
 import { getDatabase } from "./database";
 import PQueue from "p-queue";
 
@@ -19,7 +22,8 @@ const writeQueue = new PQueue({
   timeout: 5000, //Cancel stuck operations after 5s
 });
 
-const deeplKey = process.env.DEEPL_API_KEY; //Comment out while packaging
+//Comment out while packaging
+const deeplKey = process.env.DEEPL_API_KEY;
 const translator = new deepl.Translator(deeplKey);
 
 import { createWorker } from "tesseract.js";
@@ -69,9 +73,21 @@ async function handleTakeShot(_event, captureArea) {
   const fullScreenshot = sources[0].thumbnail;
   const croppedImage = fullScreenshot.crop(adjustedArea); // Use adjusted coordinates
 
-  // https://github.com/naptha/tesseract.js/issues/868#issuecomment-1879235802
+  const appPath = app.getAppPath();
+  const tesseractWorkerPath = path.join(
+    appPath,
+    "node_modules",
+    "tesseract.js",
+    "src",
+    "worker-script",
+    "node",
+    "index.js"
+  );
+
   worker = await createWorker(currentInfo.sourceTagTesseract, 1, {
-    workerPath: "./node_modules/tesseract.js/src/worker-script/node/index.js",
+    workerPath: tesseractWorkerPath,
+    cachePath: path.join(app.getPath("userData"), "tesseract-cache"),
+    cacheMethod: "persist",
   });
 
   let {
@@ -93,9 +109,9 @@ async function handleTakeShot(_event, captureArea) {
     currentInfo.targetTagDeepl
   );
 
-  mainWindow.webContents.send("captured-text", text, translatedText.text);
+  mainWindow.webContents.send("captured-text", text, translatedText);
 
-  return translatedText.text;
+  return translatedText;
 }
 
 async function deeplTranslate(sourceText, sourceLanguage, targetLanguage) {
@@ -165,10 +181,8 @@ async function handleNewOverlay(_event, info) {
       overlayWindow.loadURL(`${MAIN_WINDOW_VITE_DEV_SERVER_URL}/#/overlay`);
     } else {
       overlayWindow.loadFile(
-        path.join(
-          __dirname,
-          `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html#/overlay`
-        )
+        path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
+        { hash: "/overlay" }
       );
     }
 
@@ -208,8 +222,6 @@ async function handleDBRead(_event, method, sql, params) {
     return params !== undefined ? stmt.all(params) : stmt.all();
   }
 }
-console.log(handleDBRead(null, "all", "SELECT * FROM folders"));
-console.log(handleDBRead(null, "all", "SELECT * FROM translations"));
 
 function handleGetInfo() {
   return `Current fodler id: ${currentInfo.folder_id} \n
