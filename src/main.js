@@ -32,6 +32,8 @@ let menuBounds;
 let selectionBounds;
 let textBoxBoudns;
 
+let currentInfo; //when opening new overlay, lang. tags and stuff
+
 //Overlay stuff movement optimization
 app.commandLine.appendSwitch("enable-transparent-visuals");
 app.commandLine.appendSwitch("disable-gpu-vsync");
@@ -67,23 +69,42 @@ async function handleTakeShot(_event, captureArea) {
   const fullScreenshot = sources[0].thumbnail;
   const croppedImage = fullScreenshot.crop(adjustedArea); // Use adjusted coordinates
 
+  // https://github.com/naptha/tesseract.js/issues/868#issuecomment-1879235802
+  worker = await createWorker(currentInfo.sourceTagTesseract, 1, {
+    workerPath: "./node_modules/tesseract.js/src/worker-script/node/index.js",
+  });
+
   let {
     data: { text },
   } = await worker.recognize(croppedImage.toDataURL());
+  await worker.terminate();
 
-  //Tesseract returns a lot of white spaces when dealing with Japanese. \
+  //Tesseract returns a lot of white spaces when dealing with Japanese.
   // This approach is not good, because there might be intentional spaces
-  // but I will keep at that for now.
+  // but I will keep it that for now.
   text = text.replace(
     /([一-龯々ぁ-ゔァ-ヴー])\s+([一-龯々ぁ-ゔァ-ヴー])/g,
     "$1$2"
   );
 
-  const translatedText = await translator.translateText(text, "ja", "en-US");
+  const translatedText = await deeplTranslate(
+    text,
+    currentInfo.sourceTagDeepl,
+    currentInfo.targetTagDeepl
+  );
 
   mainWindow.webContents.send("captured-text", text, translatedText.text);
 
   return translatedText.text;
+}
+
+async function deeplTranslate(sourceText, sourceLanguage, targetLanguage) {
+  const result = await translator.translateText(
+    sourceText,
+    sourceLanguage,
+    targetLanguage
+  );
+  return result.text;
 }
 
 //Create main window
@@ -119,8 +140,10 @@ const createWindow = () => {
 };
 
 //Create overlay window
-async function handleNewOverlay() {
+async function handleNewOverlay(_event, info) {
   //TODO: receive folder name and id
+  currentInfo = info;
+
   if (!overlayWindow) {
     const primaryDisplay = screen.getPrimaryDisplay();
     const workArea = primaryDisplay.workArea;
@@ -152,11 +175,6 @@ async function handleNewOverlay() {
     overlayWindow.title = "Overlay window";
     overlayWindow.setShape([]);
 
-    // https://github.com/naptha/tesseract.js/issues/868#issuecomment-1879235802
-    worker = await createWorker("jpn", 1, {
-      workerPath: "./node_modules/tesseract.js/src/worker-script/node/index.js",
-    }); //TODO: add more languages
-
     overlayWindow.on("closed", () => {
       overlayWindow = null;
     });
@@ -166,7 +184,6 @@ async function handleNewOverlay() {
 async function handleCloseOverlay() {
   overlayWindow.destroy();
   overlayWindow = null;
-  await worker.terminate();
 }
 
 function handleUpdateOverlayShapes() {
@@ -191,6 +208,23 @@ async function handleDBRead(_event, method, sql, params) {
     return params !== undefined ? stmt.all(params) : stmt.all();
   }
 }
+console.log(handleDBRead(null, "all", "SELECT * FROM folders"));
+console.log(handleDBRead(null, "all", "SELECT * FROM translations"));
+
+function handleGetInfo() {
+  return `Current fodler id: ${currentInfo.folder_id} \n
+  Current source: ${currentInfo.sourceLanguage} \n
+  Current target: ${currentInfo.targetLanguage}`;
+}
+
+async function handleDeeplTranslate(
+  _event,
+  sourceText,
+  sourceLanguage,
+  targetLanguage
+) {
+  return await deeplTranslate(sourceText, sourceLanguage, targetLanguage);
+}
 
 app.whenReady().then(() => {
   //IPC
@@ -199,6 +233,8 @@ app.whenReady().then(() => {
   ipcMain.handle("close-overlay", handleCloseOverlay);
   ipcMain.handle("db-write", handleDBWrite);
   ipcMain.handle("db-read", handleDBRead);
+  ipcMain.handle("get-info", handleGetInfo);
+  ipcMain.handle("deepl-translate", handleDeeplTranslate);
 
   ipcMain.on("update-menu-bounds", (_event, bounds) => {
     menuBounds = bounds;

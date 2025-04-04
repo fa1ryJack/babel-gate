@@ -8,4 +8,5 @@ contextBridge.exposeInMainWorld("overlayAPI", {
     ipcRenderer.send("update-selection-bounds", bounds),
   updateTextBoxBounds: (bounds) =>
     ipcRenderer.send("update-text-box-bounds", bounds),
+  getInfo: () => ipcRenderer.invoke("get-info"),
 });

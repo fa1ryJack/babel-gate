@@ -102,8 +102,8 @@ onMounted(() => {
   >
     <div class="button-group">
       <button class="menu-btn" @click="handleButtonClick('shot')">Shot</button>
-      <button class="menu-btn" @click="handleButtonClick('magick')">
-        Something yet unknown
+      <button class="menu-btn" @click="handleButtonClick('get-info')">
+        Get info
       </button>
       <button class="menu-btn" @click="handleButtonClick('close')">
         Close overlay

@@ -116,5 +116,6 @@ onMounted(() => {
   left: 0;
   text-align: center;
   color: #000;
+  white-space: pre-line;
 }
 </style>

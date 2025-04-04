@@ -27,13 +27,17 @@ const handleSelectionUpdate = (state) => {
   selectionState.value = state;
 };
 
-function handleMenuAction(action) {
+async function handleMenuAction(action) {
   if (action === "shot") {
     getShot();
   }
 
   if (action === "close") {
     closeOverlay();
+  }
+
+  if (action === "get-info") {
+    translatedText.value = await window.overlayAPI.getInfo();
   }
 }
 
