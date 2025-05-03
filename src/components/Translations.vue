@@ -352,7 +352,7 @@ h2 {
 }
 
 .select-text-wrap:nth-child(3) {
-  margin-top: auto;
+  margin-top: 38px;
 }
 
 .content-flex button {

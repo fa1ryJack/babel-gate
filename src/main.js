@@ -34,7 +34,7 @@ let overlayWindow;
 
 let menuBounds;
 let selectionBounds;
-let textBoxBoudns;
+let textBoxBounds;
 
 let currentInfo; //when opening new overlay, lang. tags and stuff
 
@@ -201,8 +201,8 @@ async function handleCloseOverlay() {
 }
 
 function handleUpdateOverlayShapes() {
-  if (overlayWindow && menuBounds && selectionBounds && textBoxBoudns) {
-    overlayWindow.setShape([menuBounds, selectionBounds, textBoxBoudns]);
+  if (overlayWindow && menuBounds && selectionBounds && textBoxBounds) {
+    overlayWindow.setShape([menuBounds, selectionBounds, textBoxBounds]);
   }
 }
 
@@ -257,7 +257,7 @@ app.whenReady().then(() => {
     handleUpdateOverlayShapes();
   });
   ipcMain.on("update-text-box-bounds", (_event, bounds) => {
-    textBoxBoudns = bounds;
+    textBoxBounds = bounds;
     handleUpdateOverlayShapes();
   });
 

@@ -101,7 +101,7 @@ onMounted(() => {
     @mousedown="startDrag"
   >
     <div class="button-group">
-      <button class="menu-btn" @click="handleButtonClick('shot')">Shot</button>
+      <button class="menu-btn" @click="handleButtonClick('shot')">Shoot</button>
       <button class="menu-btn" @click="handleButtonClick('get-info')">
         Get info
       </button>
