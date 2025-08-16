@@ -7,8 +7,7 @@ let dbInstance = null;
 
 export function getDatabase() {
   if (!dbInstance) {
-    const userDataPath = app.getPath("userData");
-    const dbPath = path.join(userDataPath, "translations.db");
+    const dbPath = path.join(app.getPath("userData"), "translations.db");
 
     dbInstance = new Database(dbPath);
     dbInstance.pragma("journal_mode = WAL");
@@ -31,6 +30,8 @@ export function getDatabase() {
         source_text TEXT NOT NULL,
         deepl_translated TEXT,
         manual_translated TEXT,
+        deepl_source_tag CHAR(10),
+        deepl_target_tag CHAR(10),
         notes TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,

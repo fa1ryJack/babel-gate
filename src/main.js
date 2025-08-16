@@ -12,9 +12,11 @@ import * as deepl from "deepl-node";
 import { getDatabase } from "./database";
 import PQueue from "p-queue";
 import { createWorker } from "tesseract.js";
+import Kuroshiro from "kuroshiro";
+import KuromojiAnalyzer from "kuroshiro-analyzer-kuromoji";
 
-//Comment out while packaging
-require("dotenv").config();
+import dotenv from "dotenv";
+dotenv.config();
 
 const writeQueue = new PQueue({
   concurrency: 1,
@@ -22,11 +24,20 @@ const writeQueue = new PQueue({
   timeout: 5000,
 });
 
-//Comment out while packaging
 const deeplKey = process.env.DEEPL_API_KEY;
 const translator = new deepl.Translator(deeplKey);
 
 let worker;
+
+const kuroshiro = new Kuroshiro();
+let isKuromojiInitialized = false;
+async function initializeKuromoji() {
+  if (!isKuromojiInitialized) {
+    await kuroshiro.init(new KuromojiAnalyzer());
+    isKuromojiInitialized = true;
+  }
+  return kuroshiro;
+}
 
 let mainWindow;
 let overlayWindow;
@@ -87,8 +98,10 @@ async function handleTakeShot(_event, captureArea) {
 
   worker = await createWorker(currentInfo.sourceTagTesseract, 1, {
     workerPath: tesseractWorkerPath,
-    cachePath: path.join(app.getPath("userData"), "tesseract-cache"),
-    cacheMethod: "persist",
+    cachePath: path.join(app.getPath("userData")),
+    errorHandler: (err) => {
+      console.error("Worker error:", err);
+    },
   });
 
   let {
@@ -96,11 +109,19 @@ async function handleTakeShot(_event, captureArea) {
   } = await worker.recognize(croppedImage.toDataURL());
   await worker.terminate();
 
+  let notes = "";
+
   //Tesseract returns a lot of white spaces when dealing with Japanese.
   // This approach is not good, because there might be intentional spaces
-  // but I will keep it that for now.
-  if (currentInfo.sourceTagTesseract == "jpn")
+  // but I will keep it like that for now.
+  if (currentInfo.sourceTagTesseract == "jpn") {
     text = text.replace(/[\s\u3000]/g, "");
+    await initializeKuromoji();
+    notes = await kuroshiro.convert(text, {
+      to: "hiragana",
+      mode: "normal", // no spaces
+    });
+  }
 
   const translatedText = await deeplTranslate(
     text,
@@ -108,7 +129,7 @@ async function handleTakeShot(_event, captureArea) {
     currentInfo.targetTagDeepl
   );
 
-  mainWindow.webContents.send("captured-text", text, translatedText);
+  mainWindow.webContents.send("captured-text", text, translatedText, notes);
 
   return translatedText;
 }
@@ -237,7 +258,7 @@ async function handleDeeplTranslate(
   return await deeplTranslate(sourceText, sourceLanguage, targetLanguage);
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   //IPC
   ipcMain.handle("take-shot", handleTakeShot);
   ipcMain.handle("new-overlay", handleNewOverlay);
@@ -259,6 +280,10 @@ app.whenReady().then(() => {
     textBoxBounds = bounds;
     handleUpdateOverlayShapes();
   });
+
+  if (process.env.PRELOAD_KUROMOJI === "true") {
+    await initializeKuromoji();
+  }
 
   createWindow();
 

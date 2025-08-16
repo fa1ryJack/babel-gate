@@ -18,7 +18,7 @@ const targetCodes = ref([]);
 
 const sourceTextareas = ref([]);
 const deeplTextareas = ref([]);
-const manualTextareas = ref([]);
+const notesTextareas = ref([]);
 
 function autoResize(textarea) {
   if (!textarea) return;
@@ -65,14 +65,14 @@ async function saveTranslations() {
   UPDATE translations
   SET source_text = ?,
       deepl_translated = ?,
-      manual_translated = ?
+      notes = ?
   WHERE translation_id = ?`;
   const promises = translations.value.map((translation) => {
     if (translation.source_text) {
       const params = [
         translation.source_text,
         translation.deepl_translated,
-        translation.manual_translated,
+        translation.notes,
         translation.translation_id,
       ];
       return window.mainAPI.writeToDB(sql, params);
@@ -100,7 +100,7 @@ async function loadTranslations() {
 
   sourceTextareas.value.forEach(autoResize);
   deeplTextareas.value.forEach(autoResize);
-  manualTextareas.value.forEach(autoResize);
+  notesTextareas.value.forEach(autoResize);
 }
 
 function handleOnKeyDown() {
@@ -110,20 +110,20 @@ function handleOnKeyDown() {
   }, 3000);
 }
 
-async function handleNewTranslation(original, translated) {
+async function handleNewTranslation(original, translated, notes) {
   saveTranslations();
   const sql = `
-    INSERT INTO translations (source_text, deepl_translated, folder_id)
-    VALUES (?, ?, ?)
+    INSERT INTO translations (source_text, deepl_translated, folder_id, notes)
+    VALUES (?, ?, ?, ?)
   `;
-  const params = [original, translated, folder_id.value];
+  const params = [original, translated, folder_id.value, notes];
   await window.mainAPI.writeToDB(sql, params);
 
   await loadTranslations();
 }
 
-window.mainAPI.onCapturedText(({ original, translated }) => {
-  handleNewTranslation(original, translated);
+window.mainAPI.onCapturedText(({ original, translated, notes }) => {
+  handleNewTranslation(original, translated, notes);
 });
 
 function handleTextUpdate(index, field, value, event) {
@@ -179,7 +179,7 @@ async function handleDeleteTranslation(translation_id, index) {
       <button @click="saveTranslations">Manually save</button>
       <h1>New row</h1>
       <button
-        @click="() => handleNewTranslation('New source', 'New translation')"
+        @click="() => handleNewTranslation('New source', 'New translation', '')"
       >
         Add new row
       </button>
@@ -187,8 +187,8 @@ async function handleDeleteTranslation(translation_id, index) {
     <div class="main-flex">
       <div class="content-flex">
         <h2>Source text:</h2>
-        <h2>DeepL translated text (read-only):</h2>
-        <h2>Translated text (manual):</h2>
+        <h2>Translation:</h2>
+        <h2>Notes:</h2>
       </div>
       <div
         class="content-flex"
@@ -227,7 +227,7 @@ async function handleDeleteTranslation(translation_id, index) {
                 handleTranslate(index, sourceCodes[index], targetCodes[index])
             "
           >
-            Translate
+            Translate with DeepL API
           </button>
         </div>
         <!-- DeepL Text -->
@@ -248,18 +248,17 @@ async function handleDeleteTranslation(translation_id, index) {
             ref="deeplTextareas"
             class="auto-resize-textarea"
             :value="translation.deepl_translated"
-            readonly
           ></textarea>
         </div>
-        <!-- Manual Translation -->
+        <!-- Notes -->
         <div class="select-text-wrap">
           <textarea
-            ref="manualTextareas"
+            ref="notesTextareas"
             class="auto-resize-textarea"
-            :value="translation.manual_translated"
+            :value="translation.notes"
             @input="
               (e) => {
-                handleTextUpdate(index, 'manual_translated', e.target.value, e);
+                handleTextUpdate(index, 'notes', e.target.value, e);
                 handleOnKeyDown();
               }
             "
